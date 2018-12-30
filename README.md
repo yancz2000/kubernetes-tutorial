@@ -6,9 +6,9 @@ k8s是谷歌咋2014年发布的一个开源项目。是谷歌开发的borg系统
 谷歌十年前就开始适应容器技术，数据中心里运行着20多亿个容器。
 
 官网最小测试环境：https://kubernetes.io/docs/tutorials/kubernetes-basics/create-cluster/cluster-interactive/  
-  minikube version  
-  minikube start  
-  kubectl get po  
+  &ensp minikube version  
+  &emsp minikube start  
+  &nbsp kubectl get po  
   kubectl cluster-info  
 
 ## 重要概念
