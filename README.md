@@ -152,7 +152,38 @@ iptables将访问service的流量转发到后端的pod上，使用类似轮询�
 - NodePort：通过集群node的静态端口对外提供服务，外部通过NodeIP:NodePort访问service
 - LoadBalancer：采用cloud provider特有的load balancer对外提供服务
 
+## 网络
 
+k8s采用基于扁平地址空间的网络模型，每个pod都有自己的ip，pod之间不需要配置nat就能直接通信，pod内的容器共享pod的ip，能够通过localhost通信。
+
+pod内：不同的pod之间不存在端口冲突的情况，因为每个pod的ip不同，当容器使用localhost时，意味着使用的是其本身所在pod的地址空间。  
+pod间：pod的ip是集群间可见的，也就是集群中的任何pod和节点都可以通话ip和pod通信。
+pod于service：pod间可以直接通过ip通信，但是要提前知道pod的ip，而pod被重新创建时ip会发生变化，service提供了pod的抽象层，将请求转发给正确的pod，还实现了高可用和负载均衡。  
+外部访问：无论是pod的ip还是service的cluster ip，都只能在k8s集群内可见，对外集群外来说，这些ip都是私有的。k8s提供了两种方式让外界于pod通信。
+
+- NodePort：Service通过node的静态端口对外提供服务，外部可以通过 NodeIp：NodePort访问Service
+- Loadbalancer:Service利用cloud provider提供的load balancer对外提供服务，如：AWS、Azure、GCP等。
+
+## Volume
+
+容器和pod是短暂的，它们的生命周期可能很短，会被频繁的销毁和创建，容器销毁时，保存在容器中的数据都会被清除。  
+k8s使用volume持久化容器的数据，容器可能被销毁、但是volume数据库会被保留。  
+本质上，volume是一个目录，会被mount到pod上，pod中所有的容器都可以访问这个目录。  
+
+- emptyDir：是一个临时目录，生命周期于pod一致，不与pod中的容器一致。方便地为pod提供共享存储，适用于容器需要临时共享存储空间的场景。
+- hostPath：是将文件系统上已经存在目录mount到pod，大部分应用不会使用，因为增加了pod于node的耦合，限制了pod的作用，不过安心需要访问k8s和docker内容数据的应用需要使用该方式。pod被销毁，对应的volume还存在。
+- 外部storage：如aws、azure、gce等公有云上，也可以使用主流的分布式存储，如Ceph、GlusterFS等。最大特点是，volume不依赖k8s，由独立的存储系统管理，即使k8s崩溃，数据也不会受损。当然增加了运维的复杂性，对可靠性、可用性和可扩展要求高的场景。
+
+## Secret & Configmap
+
+应用启动过程中需要的一些敏感信息，如用户名、密码和密钥，将这些信息保留在容器镜像中显然不妥，k8s使用secret。  
+Secret以密文的方式存储数据，避免了在配置文件中保存敏感信息，secret以volume的形式被mount到pod，容器可以以文件或者环境变量方式使用这些数据。
+
+对于一些非敏感数据，比如应用的配置信息，可以使用ConfigMap。
+
+## Helm 包管理器
+
+每个成功的软件平台都有一个优秀的打包工具，debian、Ubuntu的apt，redhat、centos的yum，Helm是k8s的一个高层次的应用打包工具。
 
 
 ## Rolling Update
@@ -175,7 +206,40 @@ iptables将访问service的流量转发到后端的pod上，使用类似轮询�
 问：有些场景下，出现了故障，但是进程并不会退出的情况，该怎样检查 ？  
 答：Liveness探测  
 
+Liveness探测可以让用户自定义判断容器是否健康的条件，若探测失败，k8s就会重启容器。  
+Readiness探测告诉k8s什么时候可以让容器加入到Service负载均衡池中。  
 
+- 两种检测机制，若不特地配置，都采取默认行为，即通过判断容器进程返回值是否为零
+- 两种检测机制，配置参数一样，不同之处在于探测失败后的行为，Liveness会重启容器，Readiness将容器设置为不可用，不接收service转发的请求  
+- 两种检测机制，相互独立，没有依赖，可单独使用，也可同时使用 
+- Liveness探测容器是否需要重启以实现自愈，Readiness探测容器是否准备好对外提供服务。  
 
+使用场景1：scale up  
+应用启动容器都需要一段时间，比如加载缓存时间、连接数据库等，从容器启动到真正能对外提供服务需要一段时间的，可以通过Redadiness探测容器是否就绪，避免发送到还没有准备好的backend。  
+使用场景2：rolling update    
+新副本需要时间完成准备工作，假如由于人为配置错误，副本始终无法完成准备工作（如无法连接数据库），由于新副本没有异常退出，默认的检测机制人为容器已经就绪，琢步将新副本替换旧副本，结果就是，所有都替换后，应用无法对外提供服务。如果使用Redadiness探测，新副本只有通过了探测后才会被加入到service，旧副本才会被替换。
 
+## Dashboard
+
+k8s提供了一个基于web的dashboard，可以部署容器化的应用，监控应用状态，排查故障，管理各种资源。
+
+## 监控
+
+当集群运行起来后，需要保证集群都是正常的，必要组件都各司其职，有足够的资源满足应用的需求。  
+
+Scope：是docker和k8s的可视化监控工具。每个node上都会运行agent收集数据，scope app从agent获取数据并展示。  
+Heapster：是k8s的原生监控方案，以pod形式运行，自动发现集群节点，从节点上的kubelet获取监控数据，kubelet从节点上的cAdvisor收集数据。收集到的监控数据保存在InfluxDB时序数据库中，并通过Grafana展示。  
+
+Scope和Heapster的监控对象是node和pod，但是这些还不够，比如想监控api server、scheduler、controller等组件状态。  
+Prometheus Operator：CoreOS基于prometheus开发的k8s监控方案，是目前功能最全的开源监控方案。
+
+- exporter：收集目标对象数据，通过http接口暴露出来
+- prometheus server：从exporter上拉取并储存监控数据
+- grafana：prometheus自己开发了一套可视化组件但是废弃了，因为社区有更出色的grafana，可以无缝对接
+- altermanager：告警组件
+
+## 日志
+
+EFK  
+Elasticsearch是一个搜索引擎，存储日志并提供查询接口；Fluentd从k8s收集日志并发送给Elasticsearch存储；Kibana提供一个web gui，供用户浏览和搜索存储在Elasticsearch中日志。
 
