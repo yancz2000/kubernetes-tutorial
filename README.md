@@ -22,6 +22,7 @@ Pod：是k8s最小工作单元，每个pod包含一个或多个容器，pod作�
 - pod中的容器 共享存储，k8s挂载volume到pod，本质上是将volume挂载到pod中的每一个容器。
 问：哪些容器应该放到一个pod中 ？  
 答：联系非常紧密，而且需要共享资源；比如两个容器，一个是写文件到共享存储，另外一个是从存储读文件后展示。  
+
 Controller：管理pod的生命周期，定义pod部署特性，如几个副本，在哪个node上运行等；类型很多以满足不同应用场景，如：  
 Deployment：最常用，可以管理pod的多个副本  
 ReplicaSet：实现pod的多副本管理，不直接使用，而是通过被Deployment调用  
@@ -40,7 +41,7 @@ API Server：kube-apiserver，提供http/https restful api，作为前端接口�
 Scheduer：kube-scheduler，决定将pod放在哪个node上运行，会考虑node负载以及高可用要求等。  
 Controller Manager：kube-controller-manager，管理资源，保证资源处于预期状态。  
 etcd：保存集群的配置信息和资源状态信息；数据变化后会通知集群相关组件。  
-kubelet：根据scheduler提供的配置信息，创建并允许容器，并想master汇报运行状态。
+kubelet：根据scheduler提供的配置信息，创建并允许容器，并想master汇报运行状态。  
 kube-proxy：转发service的访问pod请求，将tcp/udp数据流转发到后端容器；若多个副本，则实现负载均衡。  
 pod网络：保证pod直接的网络通信，如flannel。
 
@@ -57,7 +58,7 @@ pod创建方式：命令行直接创建，二是yaml配置文件 + kubeclt apply
 详情：kubectl descripe deployment xxx  
 
 kubectl apply -f nginx.yml  
-**nginx.yml**  
+nginx.yml 内容：  
 ```
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -85,7 +86,7 @@ spec:
 
 ### 伸缩
 在线减少或增加pod的副本数  
-方法：修改yaml文件中的replicas参数值后，重新执行 kubeclt appl 即可  
+方法：修改yaml文件中的replicas参数值后，重新执行 kubeclt apply 即可  
 
 处于安全考虑，默认配置下，k8s不会讲pod调度到mster节点  
 设置方法：kubectl taint node k8s-master node-role.kubernetes.io/master-  
@@ -138,7 +139,7 @@ CronJob：定时job，类似linux中的cron定时任务。
 
 controller通过动态的创建和销毁pod来保证应用整体的健壮性，即pod是脆弱的，应用是健壮的。  
 
-每个pod都有自己的ip地址，pod在发生故障后，新的pod会重新分配ip，这里产生一个问题，pod的ip在变化，用户怎么访问呢 ？  
+每个pod都有自己的ip，pod在发生故障后，新的pod会重新分配ip，这里产生一个问题，pod的ip在变化，用户怎么访问呢 ？  
 答：service  
 service有自己的cluster ip，且固定不变，k8s维护service和pod的映射关系，无论后端pod的ip如何变化，通过service访问pod，用户对后端变化无感知。  
 
@@ -240,6 +241,6 @@ Prometheus Operator：CoreOS基于prometheus开发的k8s监控方案，是目前
 
 ## 日志
 
-EFK  
+EFK：  
 Elasticsearch是一个搜索引擎，存储日志并提供查询接口；Fluentd从k8s收集日志并发送给Elasticsearch存储；Kibana提供一个web gui，供用户浏览和搜索存储在Elasticsearch中日志。
 
