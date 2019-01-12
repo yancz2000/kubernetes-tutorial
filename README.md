@@ -250,6 +250,8 @@ Elasticsearch是一个搜索引擎，存储日志并提供查询接口；Fluentd
 
 ## 打赏
 如果您觉得这篇文档对您有所帮助，请微信扫描下方的二维码进行打赏  
-加油后将会为您分享更多的作品，谢谢！
- ![image](https://github.com/yanchaozhong/kubernetes-tutorial/blob/master/images/payforme.png)
+加油后将会为您分享更多的作品，谢谢！  
+<p align="center">  
+  <img src="https://github.com/yanchaozhong/kubernetes-tutorial/blob/master/images/payforme.png?raw=true" alt="payforme.png"/>  
+</p>
  
