@@ -248,3 +248,8 @@ Prometheus Operator：CoreOS基于prometheus开发的k8s监控方案，是目前
 EFK  
 Elasticsearch是一个搜索引擎，存储日志并提供查询接口；Fluentd从k8s收集日志并发送给Elasticsearch存储；Kibana提供一个web gui，供用户浏览和搜索存储在Elasticsearch中日志。
 
+## 打赏
+如果您觉得这篇文档对您有所帮助，请微信扫描下方的二维码进行打赏  
+加油后将会为您分享更多的作品，谢谢！
+ ![image](https://github.com/yanchaozhong/kubernetes-tutorial/blob/master/images/payforme.png)
+ 
